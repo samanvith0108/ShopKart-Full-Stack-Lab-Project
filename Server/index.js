@@ -10,9 +10,16 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 
 const app = express();
-const PORT = 8000;
 
 dotenv.config();
+const PORT = process.env.PORT || 8000;
+
+app.get("/health", (_req, res) => {
+  const databaseReady = mongoose.connection.readyState === 1;
+  res.status(databaseReady ? 200 : 503).json({
+    status: databaseReady ? "ok" : "database unavailable",
+  });
+});
 
 mongoose
   .connect(process.env.dbURL)
@@ -23,9 +30,18 @@ mongoose
     console.log(error);
   });
 
+const configuredOrigins = (process.env.CLIENT_ORIGIN || "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+const developmentOrigins =
+  process.env.NODE_ENV === "production"
+    ? []
+    : ["http://localhost:5173", "http://127.0.0.1:5173"];
+
 app.use(
   cors({
-    origin: ["http://localhost:5173", "http://127.0.0.1:5173"],
+    origin: [...new Set([...developmentOrigins, ...configuredOrigins])],
     credentials: true,
   }),
 );
