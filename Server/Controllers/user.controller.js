@@ -2,6 +2,13 @@ import User from "../Models/user.model.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
+const getAuthCookieOptions = () => ({
+  httpOnly: true,
+  path: "/",
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+  secure: process.env.NODE_ENV === "production",
+});
+
 const findUserByEmail = (email) =>
   User.findOne({
     email: { $regex: `^${email.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, $options: "i" },
@@ -84,12 +91,7 @@ export const loginUser = async (req, res) => {
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
       expiresIn: "1d",
     });
-    res.cookie("token", token, {
-      httpOnly: true,
-      path: "/",
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-    });
+    res.cookie("token", token, getAuthCookieOptions());
 
     res.status(200).json({ message: "User Logged IN" });
   } catch (error) {
@@ -107,7 +109,8 @@ export const getUser = async (req, res) => {
 };
 
 export const logoutUser = async (req, res) => {
-  res.clearCookie("token", { path: "/" });
-  res.clearCookie("token", { path: "/customers" });
+  const cookieOptions = getAuthCookieOptions();
+  res.clearCookie("token", cookieOptions);
+  res.clearCookie("token", { ...cookieOptions, path: "/customers" });
   res.status(200).json({ message: "Logged out successfully" });
 };

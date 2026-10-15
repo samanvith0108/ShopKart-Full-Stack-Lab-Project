@@ -29,7 +29,8 @@ function Register() {
       navigate("/login");
     } catch (error) {
       setErrorMessage(
-        error.response?.data?.message || "Unable to create your account. Please try again.",
+        error.response?.data?.message ||
+          "Unable to create your account. Please try again.",
       );
     } finally {
       setIsSubmitting(false);
